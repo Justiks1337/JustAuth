@@ -1,0 +1,6 @@
+name: JustAuth
+version: '${version}'
+main: org.galerka_auth.justauth.JustAuth
+api-version: '1.20'
+depend:
+  - 'AuthMe'
