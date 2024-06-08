@@ -49,7 +49,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
     public static TelegramBot getInstance() {
         if(INSTANCE == null) {
-            INSTANCE = new TelegramBot("7406912208:AAH3RaHsedJaN9ILCwennRLWIh4XPVlzkqI");
+            INSTANCE = new TelegramBot(JustAuth.getInstance().getConfig().getString("telegram_bot_token"));
         }
         return INSTANCE;
     }
@@ -71,14 +71,14 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
         try {
             switch (call_data) {
-                case "yes" -> telegramClient.executeAsync(new SendMessage(chat_id.toString(), "Игрок допущен")).thenRunAsync(
+                case "yes" -> telegramClient.executeAsync(new SendMessage(chat_id.toString(), JustAuth.getInstance().getConfig().getString("ok_button_response"))).thenRunAsync(
                         () -> {
                             Player player = Bukkit.getPlayer(getPlayerName(chat_id));
                             player.getPersistentDataContainer().remove(AuthMeHandler.TAG_KEY);
-                            player.sendMessage("Успешная авторизация!");
+                            player.sendMessage(JustAuth.getInstance().getConfig().getString("successful_authorization"));
                         }, mainThread);
                 case "no" ->
-                        telegramClient.executeAsync(new SendMessage(chat_id.toString(), "Игрок кикнут")).thenRunAsync(
+                        telegramClient.executeAsync(new SendMessage(chat_id.toString(), JustAuth.getInstance().getConfig().getString("no_button_response"))).thenRunAsync(
                                 () -> {
                                     Player player = Bukkit.getPlayer(getPlayerName(chat_id));
                                     player.kick();
@@ -92,8 +92,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void startCommand(Message message) {
         try {
-            telegramClient.executeAsync(new SendMessage(message.getChatId().toString(),
-                    "Привет! \n\n Что бы подключить двухфакторную аунтификацию, сделай N"));
+            telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), JustAuth.getInstance().getConfig().getString("start_command")
+                    ));
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
@@ -103,7 +103,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         try {
 
             if (args.length < 3) {
-                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), "Недостаточно аргументов"));
+                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), JustAuth.getInstance().getConfig().getString("not_enough_arguments")));
             }
 
             String nickname = args[1];
@@ -118,11 +118,10 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 statement.setLong(4, Instant.now().getEpochSecond());
                 statement.execute();
 
-                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), "Вы добавлены в базу данных"));
-
+                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), JustAuth.getInstance().getConfig().getString("on_success_adding_to_database")));
 
             } else {
-                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), "Пароль или никнейм не верный!"));
+                telegramClient.executeAsync(new SendMessage(message.getChatId().toString(), JustAuth.getInstance().getConfig().getString("on_failed_adding_to_database")));
             }
 
         } catch (TelegramApiException | SQLException exception) {
@@ -154,12 +153,12 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private SendMessage createAuthMessage(Long telegramId, String ip) {
-        SendMessage message = new SendMessage(telegramId.toString(), "Попытка входа на ваш аккаунт с IP адреса " + ip + "\n\nЕсли это вы, подтвердите вход. В противном случае нажмите другую кнопку.");
+        SendMessage message = new SendMessage(telegramId.toString(), JustAuth.getInstance().getConfig().getString("on_attempt").replace("{ip}", ip));
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
         InlineKeyboardRow row = new InlineKeyboardRow();
-        InlineKeyboardButton ok_button = new InlineKeyboardButton("Да, это я");
+        InlineKeyboardButton ok_button = new InlineKeyboardButton(JustAuth.getInstance().getConfig().getString("ok_button_title"));
         ok_button.setCallbackData("yes");
-        InlineKeyboardButton no_button = new InlineKeyboardButton("Нет это не я!");
+        InlineKeyboardButton no_button = new InlineKeyboardButton(JustAuth.getInstance().getConfig().getString("no_button_title"));
         no_button.setCallbackData("no");
         row.add(ok_button);
         row.add(no_button);

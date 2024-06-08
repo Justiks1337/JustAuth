@@ -10,7 +10,7 @@ import java.time.Instant;
 
 public class AuthPlayer {
 
-    int TIME_OF_LOGIN_WITHOUT_2AUTH = 1; // 3 * 24 * 3600;
+    int TIME_OF_LOGIN_WITHOUT_2AUTH = JustAuth.getInstance().getConfig().getInt("time_without_2auth");
 
     public Long telegram_id;
     public String username;
