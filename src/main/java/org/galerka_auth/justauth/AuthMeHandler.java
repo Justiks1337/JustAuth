@@ -8,30 +8,36 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.galerka_auth.database_management.DatabaseConnection;
 import org.galerka_auth.telegram.TelegramBot;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 
 
 public class AuthMeHandler implements Listener {
-    private final JavaPlugin plugin;
 
     public static final NamespacedKey TAG_KEY = new NamespacedKey("justauth", "noauth");
     public static final NamespacedKey TIME_TO_KICK_KEY = new NamespacedKey("justauth", "timetokick");
-
-
-    public AuthMeHandler(JavaPlugin plugin) {
-        this.plugin = plugin;
-    }
-
+    
     @EventHandler
     public void onPlayerAuth(LoginEvent event) {
-        org.bukkit.entity.Player player = event.getPlayer();
+        Player player = event.getPlayer();
         AuthPlayer user = new AuthPlayer(player.getName());
 
-        if (!user.need2auth()) {
+        if (user.ip.isEmpty()) {
+            try (PreparedStatement preparedStatement = DatabaseConnection.getInstance().connection.prepareStatement("UPDATE users SET ip = ? WHERE username = ?")){
+                preparedStatement.setString(1, player.getAddress().toString());
+                preparedStatement.setString(2, user.username);
+                preparedStatement.execute();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (!user.need2auth() && !user.ip.equals(player.getAddress().toString())) {
             return;}
 
         player.getPersistentDataContainer().set(TAG_KEY, PersistentDataType.STRING, "noauth");

@@ -1,6 +1,7 @@
 package org.galerka_auth.telegram;
 
 import fr.xephi.authme.api.v3.AuthMeApi;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.galerka_auth.database_management.DatabaseConnection;
@@ -8,6 +9,7 @@ import org.galerka_auth.justauth.AuthMeHandler;
 import org.galerka_auth.justauth.AuthPlayer;
 import org.galerka_auth.justauth.JustAuth;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -29,7 +31,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
     private final Executor mainThread;
     private final TelegramClient telegramClient;
-    private static TelegramBot INSTANCE;
+    @Getter(lazy = true)
+    private static final TelegramBot instance = new TelegramBot(JustAuth.getInstance().getConfig().getString("telegram_bot_token"));
 
     @Override
     public void consume(Update update) {
@@ -45,13 +48,6 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         super();
         this.mainThread = Bukkit.getScheduler().getMainThreadExecutor(JustAuth.getInstance());
         telegramClient = new OkHttpTelegramClient(token);
-    }
-
-    public static TelegramBot getInstance() {
-        if(INSTANCE == null) {
-            INSTANCE = new TelegramBot(JustAuth.getInstance().getConfig().getString("telegram_bot_token"));
-        }
-        return INSTANCE;
     }
 
     private void handleCommand(Update update) {
@@ -143,7 +139,6 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-
     public void sendAuthMessage(AuthPlayer player) {
         try {
             this.telegramClient.executeAsync(createAuthMessage(player.telegram_id, player.ip));
@@ -166,4 +161,27 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         message.setReplyMarkup(builder.build());
         return message;
     }
+
+    public static void telegramBotStarter() {
+        Thread thread = new Thread(() -> {
+            try {
+                TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication();
+
+                String botToken = JustAuth.getInstance().getConfig().getString("telegram_bot_token");
+                 botsApplication.registerBot(botToken, TelegramBot.getInstance());
+                JustAuth.getInstance().getLogger().info("Check bot status...");
+                if (!botsApplication.isRunning()) {
+                    throw new TelegramApiException();
+                }
+
+            } catch (TelegramApiException e) {
+                JustAuth.getInstance().getLogger().warning("Bot start is failed");
+                throw new RuntimeException(e);
+            }
+        });
+
+        thread.start();
+        JustAuth.getInstance().getLogger().info("Telegram bot successful started");
+    }
+
 }

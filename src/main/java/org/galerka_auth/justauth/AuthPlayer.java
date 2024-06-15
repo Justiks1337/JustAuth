@@ -22,7 +22,6 @@ public class AuthPlayer {
     public AuthPlayer (String player_name) {
         username = player_name;
         inDatabase = getUserInfo();
-
     }
 
     public boolean need2auth () {
@@ -41,6 +40,9 @@ public class AuthPlayer {
 
                 telegram_id = resultSet.getLong("telegram_id");
                 ip = resultSet.getString("ip");
+                if (ip == null) {
+                    ip = "";
+                }
                 lastAuth = resultSet.getInt("lastAuth");
                 return true;
             }

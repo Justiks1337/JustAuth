@@ -1,7 +1,7 @@
 package org.galerka_auth.justauth;
 
 import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
-import fr.xephi.authme.api.v3.AuthMeApi;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.entity.Entity;
@@ -23,6 +23,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 
 public class AuthChecker implements Listener {
@@ -129,7 +130,7 @@ public class AuthChecker implements Listener {
     }
 
     @EventHandler
-    private void event(AsyncPlayerChatEvent ev) {
+    private void event(AsyncChatEvent ev) {
         cancel(ev);
     }
 
