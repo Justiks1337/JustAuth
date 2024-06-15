@@ -10,7 +10,7 @@ import java.time.Instant;
 
 public class AuthPlayer {
 
-    int TIME_OF_LOGIN_WITHOUT_2AUTH = 1; // 3 * 24 * 3600;
+    final static int TIME_OF_LOGIN_WITHOUT_2AUTH = JustAuth.getInstance().getConfig().getInt("time_without_2auth");
 
     public Long telegram_id;
     public String username;
@@ -22,11 +22,10 @@ public class AuthPlayer {
     public AuthPlayer (String player_name) {
         username = player_name;
         inDatabase = getUserInfo();
-
     }
 
     public boolean need2auth () {
-        return inDatabase && Instant.now().getEpochSecond() > lastAuth + TIME_OF_LOGIN_WITHOUT_2AUTH;
+        return inDatabase && Instant.now().getEpochSecond() < lastAuth + TIME_OF_LOGIN_WITHOUT_2AUTH;
     }
 
     public boolean getUserInfo() {
@@ -41,6 +40,9 @@ public class AuthPlayer {
 
                 telegram_id = resultSet.getLong("telegram_id");
                 ip = resultSet.getString("ip");
+                if (ip == null) {
+                    ip = "";
+                }
                 lastAuth = resultSet.getInt("lastAuth");
                 return true;
             }

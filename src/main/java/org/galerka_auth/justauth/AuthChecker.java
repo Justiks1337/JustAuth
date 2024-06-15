@@ -1,7 +1,9 @@
 package org.galerka_auth.justauth;
 
 import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
-import fr.xephi.authme.api.v3.AuthMeApi;
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -9,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.InventoryBlockStartEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.event.player.*;
@@ -18,6 +19,11 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
 
 
 public class AuthChecker implements Listener {
@@ -28,7 +34,11 @@ public class AuthChecker implements Listener {
 
     private void cancel(Cancellable event, Entity entity) {
         if (entity instanceof Player player && needToCancel(player)) {
+            if (player.getPersistentDataContainer().get(AuthMeHandler.TIME_TO_KICK_KEY, PersistentDataType.LONG) + 120 < Instant.now().getEpochSecond()) {
+                player.kick();
+            }
             event.setCancelled(true);
+            sendTitle(player);
         }
     }
 
@@ -44,7 +54,15 @@ public class AuthChecker implements Listener {
         cancel(event, event.getView().getPlayer());
     }
 
-
+    private void sendTitle(Player player) {
+        Title.Times times = Title.Times.times(Duration.ofMillis(10 * 50), Duration.ofMillis(70 * 50), Duration.ofMillis(20 * 50));
+        Title authTitle = Title.title(
+                Component.text(JustAuth.getInstance().getConfig().getString("title")),
+                Component.text(JustAuth.getInstance().getConfig().getString("subtitle")),
+                times
+        );
+        player.showTitle(authTitle);
+    }
 
     @EventHandler
     private void event(PlayerPickupArrowEvent ev) {
@@ -112,8 +130,19 @@ public class AuthChecker implements Listener {
     }
 
     @EventHandler
-    private void event(AsyncPlayerChatEvent ev) {
+    private void event(AsyncChatEvent ev) {
         cancel(ev);
+    }
+
+    @EventHandler
+    private void event(PlayerCommandPreprocessEvent ev) {
+        cancel(ev);
+    }
+
+    @EventHandler
+    private void event(PlayerJoinEvent ev) {
+        ev.getPlayer().getPersistentDataContainer().remove(AuthMeHandler.TAG_KEY);
+        ev.getPlayer().getPersistentDataContainer().remove(AuthMeHandler.TIME_TO_KICK_KEY);
     }
 }
 

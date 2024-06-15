@@ -46,9 +46,9 @@ tasks.build {
     dependsOn(tasks.shadowJar)
 }
 
-/*tasks.shadowJar {
-    destinationDirectory = file("/home/max/Рабочий стол/anarchy/plugins/")
-}*/
+tasks.shadowJar {
+    destinationDirectory = file("/home/max/Рабочий стол/")
+}
 
 tasks.runServer {
     minecraftVersion("1.20.2")

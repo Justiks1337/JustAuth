@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import lombok.Getter;
 import org.galerka_auth.justauth.JustAuth;
 
 
@@ -16,17 +18,17 @@ public class DatabaseConnection {
             JustAuth.getInstance().getDataFolder() +
             File.separator +
             "database.db";
-    private static DatabaseConnection INSTANCE;
+    @Getter(lazy = true) private static final DatabaseConnection instance = new DatabaseConnection();
     public Connection connection;
 
 
     private DatabaseConnection () {
         try {
             connection = DriverManager.getConnection(URL);
-            JustAuth.getLog().info("Successful connection to database");
+            JustAuth.getInstance().getLogger().info("Successful connection to database");
         }
         catch (SQLException e) {
-            JustAuth.getLog().warning("Connection failed, error: " + e.getMessage());
+            JustAuth.getInstance().getLogger().warning("Connection failed, error: " + e.getMessage());
         }
         createTables();
     }
@@ -38,19 +40,11 @@ public class DatabaseConnection {
                     "telegram_id INTEGER, " +
                     "ip TEXT, " +
                     "lastAuth INTEGER)");
-            JustAuth.getLog().info("Tables created.");
+            JustAuth.getInstance().getLogger().info("Tables created.");
         }
         catch (SQLException e){
-            JustAuth.getLog().warning("failed connection to database, plugin stopped. Error: " + e.getMessage());
+            JustAuth.getInstance().getLogger().warning("failed connection to database, plugin stopped. Error: " + e.getMessage());
             System.exit(0);
         }
     }
-
-    public static DatabaseConnection getInstance() {
-        if(INSTANCE == null) {
-            INSTANCE = new DatabaseConnection();
-        }
-        return INSTANCE;
-    }
-
 }

@@ -8,30 +8,40 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.galerka_auth.database_management.DatabaseConnection;
 import org.galerka_auth.telegram.TelegramBot;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 
 
 public class AuthMeHandler implements Listener {
-    private final JavaPlugin plugin;
 
     public static final NamespacedKey TAG_KEY = new NamespacedKey("justauth", "noauth");
-
-    public AuthMeHandler(JavaPlugin plugin) {
-        this.plugin = plugin;
-    }
-
+    public static final NamespacedKey TIME_TO_KICK_KEY = new NamespacedKey("justauth", "timetokick");
+    
     @EventHandler
     public void onPlayerAuth(LoginEvent event) {
-        org.bukkit.entity.Player player = event.getPlayer();
+        Player player = event.getPlayer();
         AuthPlayer user = new AuthPlayer(player.getName());
 
-        if (!user.need2auth()) {
+        if (user.ip.isEmpty() || !user.ip.equals(player.getAddress().getHostName().toString())) {
+            try (PreparedStatement preparedStatement = DatabaseConnection.getInstance().connection.prepareStatement("UPDATE users SET ip = ? WHERE username = ?")){
+                preparedStatement.setString(1, player.getAddress().getHostName().toString());
+                preparedStatement.setString(2, user.username);
+                preparedStatement.execute();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (!user.need2auth() && user.ip.equals(player.getAddress().getHostName().toString())) {
             return;}
 
         player.getPersistentDataContainer().set(TAG_KEY, PersistentDataType.STRING, "noauth");
+        player.getPersistentDataContainer().set(TIME_TO_KICK_KEY, PersistentDataType.LONG, Instant.now().getEpochSecond());
         sendTitle(player);
         TelegramBot.getInstance().sendAuthMessage(user);
 
@@ -40,8 +50,8 @@ public class AuthMeHandler implements Listener {
     private void sendTitle(Player player) {
         Title.Times times = Title.Times.times(Duration.ofMillis(10 * 50), Duration.ofMillis(70 * 50), Duration.ofMillis(20 * 50));
         Title authTitle = Title.title(
-                Component.text("Подтверди авторизацию"),
-                Component.text("В телеграмме"),
+                Component.text(JustAuth.getInstance().getConfig().getString("title")),
+                Component.text(JustAuth.getInstance().getConfig().getString("subtitle")),
                 times
         );
         player.showTitle(authTitle);
