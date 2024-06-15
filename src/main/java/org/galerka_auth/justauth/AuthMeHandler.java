@@ -27,9 +27,9 @@ public class AuthMeHandler implements Listener {
         Player player = event.getPlayer();
         AuthPlayer user = new AuthPlayer(player.getName());
 
-        if (user.ip.isEmpty()) {
+        if (user.ip.isEmpty() || !user.ip.equals(player.getAddress().getHostName().toString())) {
             try (PreparedStatement preparedStatement = DatabaseConnection.getInstance().connection.prepareStatement("UPDATE users SET ip = ? WHERE username = ?")){
-                preparedStatement.setString(1, player.getAddress().toString());
+                preparedStatement.setString(1, player.getAddress().getHostName().toString());
                 preparedStatement.setString(2, user.username);
                 preparedStatement.execute();
             } catch (SQLException e) {
@@ -37,7 +37,7 @@ public class AuthMeHandler implements Listener {
             }
         }
 
-        if (!user.need2auth() && !user.ip.equals(player.getAddress().toString())) {
+        if (!user.need2auth() && user.ip.equals(player.getAddress().getHostName().toString())) {
             return;}
 
         player.getPersistentDataContainer().set(TAG_KEY, PersistentDataType.STRING, "noauth");
